@@ -1,0 +1,217 @@
+@FColor: #f7931a;
+
+body {
+  margin: 0;
+  background-color: #141414;
+  font-size: 14px;
+  box-sizing: border-box;
+  min-width: 1280px;
+  overflow: hidden;
+}
+
+li {
+  list-style: none;
+}
+
+p {
+  margin: 0;
+}
+
+a, a:hover {
+  color: #9c9c9c;
+  text-decoration: none !important;
+}
+
+label {
+  font-weight: 100;
+}
+
+#header {
+  height: 30px;
+  line-height: 30px;
+  padding-left: 10px;
+  background: #292929;
+
+  .ads {
+    font-size: 16px;
+    font-weight: bold;
+    color: @FColor
+  }
+
+  .nav-title {
+    display: inline-block;
+    width: 100px;
+    height: 30px;
+    margin-left: 10px;
+    padding-top: 2px;
+    text-align: center;
+  }
+}
+
+#content {
+  padding-top: 5px;
+}
+
+.mouse {
+  cursor: pointer;
+}
+
+.bfc {
+  overflow: hidden;
+}
+
+.left {
+  float: left;
+}
+
+.right {
+  float: right;
+}
+
+.w30 {
+  width: 30%;
+}
+
+.w39 {
+  width: 39%;
+}
+
+.w49 {
+  width: 49%;
+}
+
+.yellow {
+  color: @FColor;
+}
+
+.padL5 {
+  padding-left: 5px;
+}
+
+.padR5 {
+  padding-right: 5px;
+}
+
+.toRelative {
+  position: relative;
+}
+
+.toLeft {
+  text-align: left;
+}
+
+.toCenter {
+  text-align: center;
+}
+
+.toRight {
+  text-align: right;
+}
+
+.floatToLeft {
+  float: left;
+}
+
+.floatToRight {
+  float: right;
+}
+
+.marginB-20 {
+  margin-bottom: -20px;
+}
+
+// 修改模态框默认样式
+.modal-dialog {
+  width: 1200px;
+  margin-top: 80px;
+  border: 1px solid #565656;
+  color: #c5c5c5;
+  font: 12px sans-serif;
+
+  .modal-content {
+    background: #222222;
+    height: 600px;
+    border-radius: 0;
+    border: none;
+
+    .modal-header {
+      margin: 0;
+      height: 20px;
+      padding: 3px 10px;
+      border-bottom: 1px dashed #565656;
+    }
+
+    svg {
+      background-color: #222222;
+      font-size: 10px;
+    }
+  }
+}
+
+.box {
+  border: solid 1px #262626;
+  background-color: #222222;
+  margin-top: 5px;
+  border-radius: 5px;
+  color: #8e8e8e;
+  font-size: 13px;
+
+  p {
+    text-align: left;
+    padding: 5px;
+    height: 20px;
+    line-height: 20px;
+  }
+}
+
+.toTopBox {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.toBottomBox {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.loadBgH100 {
+  width: 100px;
+  height: 20px;
+  margin: 50px auto;
+  .loadBg;
+}
+
+.loadBgH300 {
+  width: 100px;
+  height: 100px;
+  margin: 100px auto;
+  .loadBg;
+}
+
+.loadBg {
+  background: url("../image/loading.gif") no-repeat center #222222;
+  background-size: 120px 90px; // 原图缩放，解决高清屏的模糊问题
+}
+
+// 修改chrome默认滚动条样式
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+
+::-webkit-scrollbar-track-piece {
+  background-color: #525252;
+  -webkit-border-radius: 1px;
+}
+
+::-webkit-scrollbar-thumb:vertical {
+  height: 3px;
+  background-color: #999999;
+  -webkit-border-radius: 1px;
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+  width: 3px;
+  background-color: #999999;
+  -webkit-border-radius: 1px;
+}

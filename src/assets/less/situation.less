@@ -1,0 +1,116 @@
+.situation {
+  padding: 0 5px;
+  text-align: center;
+
+  .refresh {
+    position: absolute;
+    top: 2px;
+    right: 5px;
+    width: 250px;
+    height: 30px;
+    font-size: 13px;
+    color: #9c9c9c;
+    padding-top: 5px;
+
+    .btn {
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      background: url("../image/play.svg")  no-repeat top;
+    }
+
+    .active {
+      background: url("../image/pause.svg") no-repeat top;
+    }
+  }
+
+  .left50 {
+    width: 50%;
+    height: 250px;
+    float: left;
+    padding: 0 2px 0 0;
+  }
+
+  .right50 {
+    width: 50%;
+    height: 250px;
+    float: right;
+    padding: 0 0 0 2px;
+  }
+
+  .title {
+    span {
+      color: #6d361a;
+    }
+  }
+
+  #dns {
+    height: 210px;
+    padding: 10px;
+    color: #889080;
+
+    p {
+      text-align: center;
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    div {
+      width: 44%;
+      height: 35px;
+      line-height: 35px;
+      margin: 5px 8px;
+      border: solid 1px #383c33;
+      background: #282b25;
+      float: left;
+    }
+  }
+
+  #web {
+    height: 210px;
+    padding: 10px;
+    color: #889080;
+
+    p {
+      text-align: center;
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    div {
+      width: 30%;
+      height: 20px;
+      line-height: 20px;
+      margin: 2px;
+      border: solid 1px #383c33;
+      background: #282b25;
+      float: left;
+    }
+  }
+
+  #ips {
+    height: 230px;
+
+    .pLeft {
+      position: absolute;
+      left: 5px;
+      top: 5px;
+      font-size: 15px;
+      font-weight: bold;
+    }
+    .pRight {
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    span {
+      font-size: 12px;
+    }
+  }
+}

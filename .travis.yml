@@ -1,0 +1,21 @@
+branches:
+  only:
+    - master
+
+language: node_js
+
+node_js: stable
+
+cache:
+  directories:
+    - node_modules
+
+install:
+  - npm install
+
+before_script:
+
+script:
+  - npm run build
+
+after_script:
