@@ -98,7 +98,7 @@ export default {
     setRefer (r) {
       this.selectedRefer = r
     },
-    // 绘制时间线
+    // 一、绘制时间线
     drawLine (param = this.lineParam, refer = this.selectedRefer) {
       getEntropy(param).then(
         (response) => {
@@ -106,35 +106,80 @@ export default {
           data.map((item) => {
             item.score = item.score / response.data.max
           })
-
           const w = Math.max(viewport.width, 1280)
           const margin = {left: 30, top: 10, right: 40, bottom: 20}
           const width = w - margin.left - margin.right
           const height = 120
           const parseTime = d3.utcParse('%Y-%m-%dT%H:%M:%S.%LZ')
-
-          d3.select('#chart').html('') // 清除画布
+          // 1、设置画布大小
+          d3.select('#chart').html('')
           let svg = d3.select('#chart')
             .append('svg')
             .attr('width', w - 30)
             .attr('height', 155)
-
-          // 计算比例尺
-          let x = d3.scaleTime()
-            .domain(d3.extent(data, (d) => parseTime(d.time)))
-            .range([0, width])
+            // 2、计算比例尺(把一组输入域映射到输出域的函数)
+          let x = d3.scaleTime() // 时间比例尺
+            .domain(d3.extent(data, (d) => parseTime(d.time))) // 输入域
+            .range([0, width]) // 输出域
           let x2 = d3.scaleTime()
             .domain(x.domain())
             .range([0, width])
-
           let y = d3.scaleLinear()
             .domain([0, 1])
             .range([height, 0])
-
-          // 绘制刻度
+            // 3、定义矩形剪裁路径
+          svg.append('clipPath')
+            .attr('id', 'clip')
+            .append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            // 4、创建画布
+          let focus = svg.append('g')
+            .attr('class', 'focus')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+            // 5、绘制刻度
           let xAxis = d3.axisBottom(x).tickFormat(d3.timeFormat('%H:%M/%d')).ticks(15)
           let yAxis = d3.axisLeft(y)
-
+          focus.append('g')
+            .attr('class', 'axis axis--x')
+            .attr('transform', 'translate(0,' + height + ')')
+            .call(xAxis)
+          focus.append('g')
+            .attr('class', 'axis axis--y')
+            .call(yAxis)
+            // 6、绘制面积图
+          let area = d3.area()
+            .curve(d3.curveMonotoneX)
+            .x((d) => x(parseTime(d.time)))
+            .y0(height)
+            .y1((d) => y(d.score))
+          focus.append('path')
+            .datum(data)
+            .attr('class', 'area')
+            .attr('clip-path', 'url(#clip)') // 指向剪裁路径
+            .attr('d', area)
+            // 7、绘制折线图
+          let line = d3.line()
+            .x((d) => x(parseTime(d.time)))
+            .y((d) => y(0.5 + d.entropy[refer] / 2)) // 保持折线在时间线的上半区域
+          let lineTemp = focus.append('path')
+            .datum(data)
+            .attr('class', 'line')
+            .attr('clip-path', 'url(#clip)') // 指向剪裁路径
+            .attr('d', line)
+            // 折线图添加圆点（用于点击）
+            // let points = focus.selectAll('circle')
+            //   .data(data)
+            //   .enter()
+            //   .append('circle')
+            //   .attr('cx', (d) => x(parseTime(d.time)))
+            //   .attr('cy', (d) => y(d.score))
+            //   .attr('r', '3px')
+            //   .attr('fill', '#fff')
+            //   .on('click', function (d) {
+            //     console.log(d.time + ' ' + d.score)
+            //   })
+            // 8、添加zoom
           let zoomed = () => {
             let t = d3.event.transform
             x.domain(t.rescaleX(x2).domain())
@@ -148,69 +193,8 @@ export default {
             .translateExtent([[0, 0], [width, height]])
             .extent([[0, 0], [width, height]])
             .on('zoom', zoomed)
-
-          // 绘制面积图
-          let area = d3.area()
-            .curve(d3.curveMonotoneX)
-            .x((d) => x(parseTime(d.time)))
-            .y0(height)
-            .y1((d) => y(d.score))
-
-          // 绘制折线图
-          let line = d3.line()
-            .x((d) => x(parseTime(d.time)))
-            .y((d) => y(0.5 + d.entropy[refer] / 2)) // 保持折线在时间线的上半区域
-
-          // 定义矩形剪裁路径
-          svg.append('clipPath')
-            .attr('id', 'clip')
-            .append('rect')
-            .attr('width', width)
-            .attr('height', height)
-
-          // 创建画布
-          let focus = svg.append('g')
-            .attr('class', 'focus')
-            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-
-          focus.append('path')
-            .datum(data)
-            .attr('class', 'area')
-            .attr('clip-path', 'url(#clip)') // 指向剪裁路径
-            .attr('d', area)
-
-          let lineTemp = focus.append('path')
-            .datum(data)
-            .attr('class', 'line')
-            .attr('clip-path', 'url(#clip)') // 指向剪裁路径
-            .attr('d', line)
-
-          focus.append('g')
-            .attr('class', 'axis axis--x')
-            .attr('transform', 'translate(0,' + height + ')')
-            .call(xAxis)
-
-          focus.append('g')
-            .attr('class', 'axis axis--y')
-            .call(yAxis)
-
-            // 折线图添加圆点（用于点击）
-            // let points = focus.selectAll('circle')
-            //   .data(data)
-            //   .enter()
-            //   .append('circle')
-            //   .attr('cx', (d) => x(parseTime(d.time)))
-            //   .attr('cy', (d) => y(d.score))
-            //   .attr('r', '3px')
-            //   .attr('fill', '#fff')
-            //   .on('click', function (d) {
-            //     console.log(d.time + ' ' + d.score)
-            //   })
-
-          // 绑定zoom
-          svg.call(zoom)
-
-          // 建立brush对象
+          svg.call(zoom) // 绑定zoom
+          // 9、建立brush
           let brush = d3.brushX()
             .on('end', () => {
               if (d3.event.selection) {
@@ -218,7 +202,6 @@ export default {
                 this.detail = [] // 清除详细视图数据
                 this.detailLoading = false
                 d3.select('#ips').html('') // 清除画布
-
                 let start = x.invert(d3.event.selection[0] - margin.left)
                 let end = x.invert(d3.event.selection[1] - margin.left)
                 let startTime = d3.timeFormat('%Y-%m-%d %H:%M:00')(start)
@@ -246,25 +229,21 @@ export default {
                 }
               }
             })
-
           svg.append('g')
             .attr('class', 'brush')
             .call(brush)
             .selectAll('rect')
             .attr('y', 0)
             .attr('height', 10)
-
-          // 切换参考线
+            // 10、切换参考线
           d3.selectAll('.refer')
             .on('click', function () {
               let line = d3.line()
                 .x((d) => x(parseTime(d.time)))
                 .y((d) => y(0.5 + d.entropy[d3.select(this).text()] / 2)) // 保持折线在时间线的上半区域
-
               lineTemp.transition()
                 .duration(500)
                 .ease(d3.easePolyInOut).attr('d', line)
-
               let zoomed = () => {
                 let t = d3.event.transform
                 x.domain(t.rescaleX(x2).domain())
@@ -272,13 +251,11 @@ export default {
                 focus.select('.line').attr('d', line)
                 focus.select('.axis--x').call(xAxis)
               }
-
               let zoom = d3.zoom()
                 .scaleExtent([1, Infinity])
                 .translateExtent([[0, 0], [width, height]])
                 .extent([[0, 0], [width, height]])
                 .on('zoom', zoomed)
-
               svg.call(zoom)
             })
         },
@@ -292,23 +269,14 @@ export default {
       this.detail = [] // 详细窗口信息
       this.drawScatter(this.scatterDate.data, this.brushing)
     },
-    // 绘制散点图
+    // 二、绘制散点图
     drawScatter (data, brushing) {
       let _this = this
       d3.select('#ips').html('') // 清除画布
-
       const w = viewport.width - 12 // 12为父div的margin和border
       const h = 360 // drag时不使用详细视图
-
-      // 创建比例尺(-10+10用来避免节点超出画布)
-      let xScale = d3.scaleLinear()
-        .domain([d3.min(data, (d) => d[0]), d3.max(data, (d) => d[0])])
-        .range([10, w - 10])
-
-      let yScale = d3.scaleLinear()
-        .domain([d3.min(data, (d) => d[1]), d3.max(data, (d) => d[1])])
-        .range([10, h - 10])
-
+      let pos = {} // 记录拖拽前的坐标
+      let ips = null // 记录所关联的IP
       // 检测散点被拖出画布的方向（left,bottom,right）
       let checkOut = (x, y) => {
         if (x < 10) {
@@ -317,9 +285,14 @@ export default {
           return 'bottom'
         } else if (x > w - 10) return 'right'
       }
-
-      let pos = {} // 记录拖拽前的坐标
-      let ips = null // 记录所关联的IP
+      // 定义比例尺(-10+10用来避免节点超出画布)
+      let xScale = d3.scaleLinear()
+        .domain([d3.min(data, (d) => d[0]), d3.max(data, (d) => d[0])])
+        .range([10, w - 10])
+      let yScale = d3.scaleLinear()
+        .domain([d3.min(data, (d) => d[1]), d3.max(data, (d) => d[1])])
+        .range([10, h - 10])
+        // 定义拖拽行为
       let drag = d3.drag()
         .subject(function () { // 定义了元素拖拽行为的原点
           let t = d3.select(this)
@@ -336,15 +309,12 @@ export default {
         .on('start', function () { // 拖拽开始时
           // 全部设置为灰色
           d3.selectAll('circle').style('fill', '#6a6a6a')
-
           // 存储原位置
           pos.ip = d3.select(this).attr('name')
           pos.x = d3.select(this).attr('cx')
           pos.y = d3.select(this).attr('cy')
-
           // 清除关联的IP
           ips = null
-
           // 获取相关联IP
           getIps({'startTime': _this.startTime, 'endTime': _this.endTime, 'ip': d3.select(this).attr('name')}).then(
             (response) => {
@@ -359,7 +329,6 @@ export default {
               console.log(error)
             }
           )
-
           // 为选中的节点添加颜色
           let node = d3.select(this)
           node.style('fill', (d) => _this.color(d[3]))
@@ -371,11 +340,9 @@ export default {
           d3.selectAll('circle')
             .style('fill', (d) => _this.color(d[3]))
             .attr('r', (d) => Math.max(3, Math.floor(d[4] * 15)))
-
           let x = parseFloat(d3.select(this).attr('cx'))
           let y = parseFloat(d3.select(this).attr('cy'))
-
-          if (checkOut(x, y) === 'left' || checkOut(x, y) === 'bottom' || checkOut(x, y) === 'right') { // 触发该IP的和弦视图和平行坐标视图
+          if (['left', 'bottom', 'right'].includes(checkOut(x, y))) {
             // 踢回散点
             d3.select('#ip' + pos.ip.split('.').join(''))
               .transition()
@@ -391,7 +358,6 @@ export default {
               // 计算新坐标
               let n = Object.keys(ips).length
               let a = 2 * Math.PI / n
-
               // 权重
               let weight = []
               for (let value of Object.values(ips)) {
@@ -401,18 +367,16 @@ export default {
               let scale = d3.scaleLinear()
                 .domain([d3.min(weight), d3.max(weight)])
                 .range([150, 30])
-
-              // 重新排列
+                // 重新排列
               let i = 0
               // 清除所有直线
               svg.selectAll('line').remove()
-
               for (let key of Object.keys(ips)) {
-                // 移动散点
-                let node = d3.select('#ip' + key.split('.').join(''))
+                // 计算新坐标
                 let xNew = x + scale(ips[key]) * Math.sin(a * i)
                 let yNew = y + scale(ips[key]) * Math.cos(a * i)
-
+                // 移动散点
+                let node = d3.select('#ip' + key.split('.').join(''))
                 node.transition()
                   .duration(300)
                   .ease(d3.easePolyInOut)
@@ -422,7 +386,7 @@ export default {
                   .duration(300)
                   .ease(d3.easePolyInOut)
                   .attr('cx', (d) => {
-                    // 防止超出画布检测
+                    // 检测是否超出画布
                     if (xNew < Math.max(3, Math.floor(d[4] * 15))) {
                       xNew = Math.max(3, Math.floor(d[4] * 15))
                     } else if (xNew > w - Math.max(3, Math.floor(d[4] * 15))) {
@@ -431,7 +395,7 @@ export default {
                     return xNew
                   })
                   .attr('cy', (d) => {
-                    // 防止超出画布检测
+                    // 检测是否超出画布
                     if (yNew < Math.max(3, Math.floor(d[4] * 15))) {
                       yNew = Math.max(3, Math.floor(d[4] * 15))
                     } else if (yNew > h - Math.max(3, Math.floor(d[4] * 15))) {
@@ -439,8 +403,7 @@ export default {
                     }
                     return yNew
                   })
-
-                // 绘制连接线
+                  // 绘制连接线
                 svg.append('line')
                   .transition()
                   .duration(300)
@@ -451,27 +414,24 @@ export default {
                   .attr('stroke', '#afafaf')
                   .attr('stroke-width', 0.1)
                   .style('pointer-events', 'none') // 设置连接线永远不会成为鼠标事件的target
-
                 i++
               }
             }
           }
         })
-
-      // 创建SVG
+        // 1、创建画布
       let svg = d3.select('#ips')
         .append('svg')
         .attr('width', w)
         .attr('height', h)
-
-      // 绘制散点
+        // 2、绘制散点
       svg.selectAll('circle')
         .data(data)
         .enter()
         .append('circle')
         .attr('id', (d) => 'ip' + d[2].split('.').join(''))
         .attr('name', (d) => d[2])
-        .attr('cx', (d) => xScale(d[0])) // 避免落入矩形区域
+        .attr('cx', (d) => xScale(d[0]))
         .attr('cy', (d) => yScale(d[1]))
         .attr('r', (d) => Math.max(3, Math.floor(d[4] * 15)))
         .attr('class', (d) => {
@@ -493,8 +453,7 @@ export default {
           node.style('fill', (d) => _this.color(d[3]))
             .attr('r', (d) => Math.max(3, Math.floor(d[4] * 15)) + 3)
             .style('stroke-opacity', 1)
-
-          // 为选中节点添加文本标签
+            // 为选中节点添加文本标签
           d3.select('#ips')
             .select('svg')
             .append('text')
@@ -506,16 +465,15 @@ export default {
             .style('fill', '#fff')
         })
         .on('mouseout', function () {
+          // 恢复颜色
           d3.select(this)
             .attr('r', (d) => Math.max(3, Math.floor(d[4] * 15)))
             .style('stroke-opacity', 0.3)
-
-          // 去掉文字标签
+            // 去掉文本标签
           d3.select('#ips').selectAll('text').remove()
         })
         .call(drag)
-
-      // 添加IP散点筛选事件
+        // 3、添加IP散点筛选事件
       d3.select('#legend')
         .selectAll('span')
         .on('click', function () {
@@ -540,10 +498,9 @@ export default {
               .attr('cx', 50)
           }
         })
-
-      // 是否设置brush
+        // 4、设置brush
       if (brushing) {
-        // 建立brush对象
+        // 创建brush对象
         let brush = d3.brush()
           .on('start', () => {
             // 恢复颜色和大小
@@ -569,27 +526,25 @@ export default {
                 })
             }
           })
-
         svg.append('g')
           .attr('class', 'brush')
           .call(brush)
       }
     },
-    // 绘制和弦图
+    // 三、绘制和弦图
     drawChord: function (start, end, ip) {
-      this.$modal.show('chord-modal', {}, {draggable: true}) // 启动模态框
+      // 启动模态框
+      this.$modal.show('chord-modal', {}, {draggable: true})
+      d3.select('.modal-title').html('') // 清除标题
+      d3.select('.modal-title').append('p').text(ip + ' From ' + start + ' to ' + end)
+      d3.select('#chordChart').html('') // 清除画布
       getChord({startTime: start, endTime: end, ip: ip}).then(
         (response) => {
-          d3.select('.modal-title').html('') // 清除标题
-          d3.select('#chordChart').html('') // 清除画布
-
-          d3.select('.modal-title').append('p').text(ip + ' From ' + start + ' to ' + end) // 创建标题
-
           const width = 550
-          const height = 550 // 画布宽和高
+          const height = 550
           const outerRadius = Math.min(width, height) / 2 - 10
-          const innerRadius = outerRadius - 15 // 和弦图半径
-
+          const innerRadius = outerRadius - 15
+          // 1、设置画布
           let svg = d3.select('#chordChart')
             .append('svg')
             .attr('width', width)
@@ -597,29 +552,22 @@ export default {
             .append('g')
             .attr('id', 'chordChart') // 用于限定样式
             .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')') // 坐标原点移到画布中间
-
           svg.append('circle')
-            .attr('r', outerRadius) // +10是为了使鼠标移动出时触发事件
-
-          // 和弦图包含两部分（外部圆弧Arc和内部弦Ribbon）
+            .attr('r', outerRadius)
+            // 和弦图包含两部分: Ⅰ、外部圆弧(groups) 和 Ⅱ、内部弦(chords)
           let g = svg.datum(chord(response.data.matrix))
-
-          // Ribbon 绘制外部的圆弧: arr格式为[innerRadius, outerRadius, startAngle, endAngle]
+          // Ⅰ、绘制外部的圆弧: 格式为[innerRadius, outerRadius, startAngle, endAngle]
           let myArc = (arr) => {
             // 极坐标(r,a)转直角坐标(x,y)
             let polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
-
             // 圆弧的四个关键点
             let ss = polar(arr[0], arr[2])
             let se = polar(arr[0], arr[3])
             let es = polar(arr[1], arr[2])
             let ee = polar(arr[1], arr[3])
-
-            // 返回路径
             return ['M', ss, 'A', arr[0], arr[0], '0', (arr[3] - arr[2] > Math.PI ? 1 : 0), '1', se, 'L', ee,
               'A', arr[1], arr[1], '0', (arr[3] - arr[2] > Math.PI ? 1 : 0), '0', es, 'Z'].join(' ')
           }
-
           let groups = g.append('g')
             .attr('class', 'groups')
             .selectAll('g')
@@ -628,40 +576,33 @@ export default {
             .append('g')
             .style('cursor', 'pointer')
             .on('mouseover', (d, i) => {
-              // 更改内部弦的样式（隐藏不相关的弦）
+              // 更改内部弦的样式(隐藏不相关的弦)
               chords.classed('fade', (p) => p.source.index !== i && p.target.index !== i)
             })
-
-          // 鼠标停留显示的提示
+            // 鼠标停留显示的提示
           groups.append('title')
             .text((d, i) => response.data.ips[i] + '(' + d.value + ')')
-
           let groupPath = groups.append('path')
             .attr('id', (d, i) => 'group' + i)
-            .attr('d', (d) => myArc([innerRadius, outerRadius, d.startAngle, d.endAngle]))
-            .style('fill', (d, i) => this.color(i))
-
-          // 添加文本标注
+            .attr('d', (d) => myArc([innerRadius, outerRadius, d.startAngle, d.endAngle])) // 计算路径
+            .style('fill', (d, i) => this.color(i)) // 填充颜色
+            // 添加文本标注
           let groupText = groups.append('text')
             .attr('x', 3) // x坐标
             .attr('dy', -3) // 相对于当前位置在y方向上平移的距离(正则往下，负则往上)
             .append('textPath')
             .attr('xlink:href', (d, i) => '#group' + i)
             .text((d, i) => response.data.ips[i] + '(' + d.value + ')')
-
-          // 移除过长的文本标注
+            // 移除过长的文本标注
           groupText.filter(function (d, i) {
             return groupPath._groups[0][i].getTotalLength() / 2 - 16 < this.getComputedTextLength()
           }).remove()
-
-          // Arc 绘制内部的弦（圆弧+二次贝塞尔曲线+圆弧+二次贝塞尔曲线）
+          // Ⅱ、绘制内部的弦(圆弧 + 二次贝塞尔曲线 + 圆弧 + 二次贝塞尔曲线)
           let myRibbon = (r, ss, se, es, ee) => {
             // 极坐标(r,a)转直角坐标(x,y)
             let polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
-
             // 绘制圆弧：A rx ry x-axis-rotation large-arc-flag sweep-flag x y
             let arc = (r, p, a) => ['A', r, r, 0, (a > Math.PI ? 1 : 0), 1, p].join(' ')
-
             // 绘制二次贝塞尔曲线：Q x1 x2 x y
             let curve = (p, a0, a1, r) => {
               a1 = a1 + (a1 < a0 ? 2 * Math.PI : 0)
@@ -671,26 +612,22 @@ export default {
               let a2 = (a1 + a0) / 2 - (a1 - a0 > Math.PI ? Math.PI : 0)
               return ['Q', (t * r * Math.cos(a2)), (t * r * Math.sin(a2)), p].join(' ')
             }
-
+            // 弦的四个关键点
             let pss = polar(r, ss)
             let pse = polar(r, se)
             let pes = polar(r, es)
             let pee = polar(r, ee)
-
             return ['M', pss, arc(r, pse, se - ss), curve(pes, se, es, r), arc(r, pee, ee - es), curve(pss, ss, ee, r), 'Z'].join(' ')
           }
-
-          // 绘制内部弦
           let chords = g.append('g')
             .attr('class', 'ribbons')
             .selectAll('path')
             .data((d) => d)
             .enter()
             .append('path')
-            .attr('d', (d) => myRibbon(innerRadius, d.source.startAngle, d.source.endAngle, d.target.startAngle, d.target.endAngle))
-            .style('fill', (d) => this.color(d.target.index))
-
-          // 鼠标停留显示的提示
+            .attr('d', (d) => myRibbon(innerRadius, d.source.startAngle, d.source.endAngle, d.target.startAngle, d.target.endAngle)) // 计算路径
+            .style('fill', (d) => this.color(d.target.index)) // 填充颜色
+            // 鼠标停留显示的提示
           chords.append('title')
             .text((d) => response.data.ips[d.source.index] + ' → ' + response.data.ips[d.target.index] + ': ' + d.source.value +
                 '\n' + response.data.ips[d.target.index] + ' → ' + response.data.ips[d.source.index] + ': ' + d.target.value)
